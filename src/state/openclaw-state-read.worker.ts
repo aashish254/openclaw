@@ -284,9 +284,7 @@ serveOwnedWorkerTasks(
                 }
                 if (command.type === "cron.activeReceiptOwners") {
                   return {
-                    ok: true,
                     type: command.type,
-                    sourceAdmitted,
                     owners: readActiveCronRunReceiptOwnersInDatabase(db, command.agentId),
                   };
                 }
