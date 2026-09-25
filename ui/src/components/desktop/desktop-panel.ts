@@ -2,6 +2,7 @@ import type {
   DesktopObserveResult,
   DesktopSource,
   EnvironmentSummary,
+  WorkerDesktopAppId,
 } from "@openclaw/gateway-protocol";
 import type { ControlUiFocusBuildTarget } from "@openclaw/session-url-contract";
 import { nothing } from "lit";
@@ -22,7 +23,6 @@ import { DesktopMobileKeyboard } from "./desktop-mobile-keyboard.ts";
 import {
   DesktopConnectionHandoff,
   releaseDesktopObservation,
-  type DesktopAppId,
   type DesktopCredentials,
   type ObservedDesktopConnection,
   type PendingDesktopConnection,
@@ -78,7 +78,7 @@ class OpenClawDesktopPanel extends OpenClawLitElement {
   @state() private errorText: string | null = null;
   @state() private noticeText: string | null = null;
   @state() private disconnectedReason: string | null = null;
-  @state() private desktopApps: DesktopAppId[] = [];
+  @state() private desktopApps: WorkerDesktopAppId[] = [];
   @state() private sizingMode: desktopTransport.DesktopSizingMode = "fit";
   @state() private canResize = false;
 
