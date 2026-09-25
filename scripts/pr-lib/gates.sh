@@ -151,6 +151,11 @@ resolve_pr_gates_remote_mode() {
       printf 'local\n'
       ;;
     testbox|crabbox-aws|github)
+      if [ "${OPENCLAW_TESTBOX:-}" = "1" ]; then
+        echo "OPENCLAW_PR_GATES_REMOTE=$OPENCLAW_PR_GATES_REMOTE conflicts with OPENCLAW_TESTBOX=1; select one gate mode." >&2
+        echo "Unset OPENCLAW_TESTBOX to use $OPENCLAW_PR_GATES_REMOTE gates, or unset OPENCLAW_PR_GATES_REMOTE to use completed hosted proof." >&2
+        return 2
+      fi
       printf '%s\n' "$OPENCLAW_PR_GATES_REMOTE"
       ;;
     *)
@@ -169,6 +174,22 @@ run_remote_testbox_full_test_gate() {
   local label="$1"
   local log_file="$2"
   local lease_label="$3"
+  local remote_env=(CI=1 OPENCLAW_TESTBOX_REMOTE_RUN=1 PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false)
+  local name value
+  # Delegated Testbox commands do not inherit the caller's scheduling controls.
+  for name in OPENCLAW_TEST_PROJECTS_PARALLEL OPENCLAW_VITEST_MAX_WORKERS; do
+    [ -n "${!name:-}" ] || continue
+    value=$(node --input-type=module -e '
+      import { pathToFileURL } from "node:url";
+      const { parsePositiveInt } = await import(pathToFileURL(process.argv[1] + "/lib/numeric-options.mjs").href);
+      const value = process.argv[2].trim();
+      if (value) {
+        try { console.log(parsePositiveInt(value, process.argv[3])); }
+        catch (error) { console.error(error.message); process.exitCode = 2; }
+      }
+    ' "$script_parent_dir" "${!name}" "$name") || return 2
+    [ -z "$value" ] || remote_env+=("$name=$value")
+  done
   # Same Blacksmith Testbox delegation shape check:changed uses; the worktree's
   # own wrapper syncs this prep tree (the canonical copy would sync the primary
   # checkout instead).
@@ -183,7 +204,7 @@ run_remote_testbox_full_test_gate() {
     --ttl 240m \
     --timing-json \
     --label "$lease_label" \
-    -- env CI=1 OPENCLAW_TESTBOX_REMOTE_RUN=1 PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false corepack pnpm test
+    -- env "${remote_env[@]}" corepack pnpm test
 }
 
 read_remote_testbox_gate_stamp() {
@@ -431,11 +452,7 @@ prepare_gates() {
   local pr="$1"
   local remote_record="${2:-}"
   local gates_remote_mode
-  gates_remote_mode=$(resolve_pr_gates_remote_mode) || return 1
-  if [ "$gates_remote_mode" != "local" ] && [ "${OPENCLAW_TESTBOX:-}" = "1" ]; then
-    echo "OPENCLAW_PR_GATES_REMOTE=$gates_remote_mode conflicts with OPENCLAW_TESTBOX=1; hosted PR gates already own remote proof."
-    exit 2
-  fi
+  gates_remote_mode=$(resolve_pr_gates_remote_mode) || return $?
 
   PR_MAIN_SHA=""
   enter_worktree "$pr" false || return 1

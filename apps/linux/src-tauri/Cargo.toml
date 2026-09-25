@@ -20,7 +20,7 @@ getrandom = "0.4.3"
 keyring = { version = "4.2.0", default-features = false, features = ["v1"] }
 mdns-sd = { version = "0.21.3", default-features = false }
 openclaw-gateway-client = { path = "../../../crates/openclaw-gateway-client" }
-rustls = { version = "0.23.44", default-features = false, features = ["ring", "std", "tls12"] }
+rustls = { version = "0.23.45", default-features = false, features = ["ring", "std", "tls12"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 sha2 = "0.11.0"
@@ -58,6 +58,7 @@ libc = "0.2.189"
 cairo-rs = { version = "0.18.5", features = ["png"] }
 gtk = "0.18.2"
 webkit2gtk = { version = "2.0.2", features = ["v2_40"] }
+x11 = { version = "2.21.0", features = ["xlib"] }
 tauri-plugin-notifications = { git = "https://github.com/steipete/tauri-plugin-notifications.git", rev = "35d04a6af588a5d5d438da0320c7d95a877cfe14" }
 zbus = { version = "5.19.0", default-features = false, features = ["tokio"] }
 

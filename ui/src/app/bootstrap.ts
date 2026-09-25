@@ -131,11 +131,7 @@ export function bootstrapApplication(): ApplicationRuntime {
         selectedAgentId: startupTargetSelection.selectedAgentId,
       }
     : startup.settings;
-  if (
-    startup.location.pathname !== startupLocation.pathname ||
-    startup.location.search !== startupLocation.search ||
-    startup.location.hash !== startupLocation.hash
-  ) {
+  if (!sameRouteLocation(startup.location, startupLocation)) {
     // Remove URL credentials before deferred routing or Gateway authentication can expose them.
     history.replace(startup.location);
   }
@@ -316,7 +312,7 @@ export function bootstrapApplication(): ApplicationRuntime {
     connectionBootstrap,
   });
   const stopConfigWriteSuspension = bindUpdateConfigWriteInterlock(overlays, runtimeConfig);
-  const navigation = createApplicationNavigationPreferences(settings);
+  const navigation = createApplicationNavigationPreferences(theme);
   const nativeChatDrafts = createNativeChatDrafts();
   const linkReaderRouting = startLinkReaderRouting(() => gateway.snapshot);
   const nativeLinkRouting = startNativeLinkRouting({
