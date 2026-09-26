@@ -5,31 +5,24 @@ import { DEFAULT_MAX_LINKS } from "./defaults.js";
 
 const BARE_LINK_RE = /https?:\/\/\S+/gi;
 
-// Prose delimiters that are trimmed off a bare link, mirroring the trailing
-// punctuation GitHub's GFM autolink extension excludes. Unlike GFM, trimming
-// stops at the query or fragment delimiter: a comma or period there can be an
-// authored value, e.g. https://example.com/search?q=a,b keeps its query comma.
+// Prose delimiters that are trimmed off a bare link, mirroring the punctuation
+// GitHub's GFM autolink extension excludes. Unlike GFM, trimming applies only
+// to the path region: from a query or fragment delimiter onward a comma or
+// period can be an authored value, so it is preserved verbatim.
 const TRAILING_PUNCTUATION = ",.;:?!\"'…";
 // Closers are only trailing punctuation when unbalanced by their opener inside the URL,
 // so destinations like https://en.wikipedia.org/wiki/Foo_(bar) keep their suffix.
+// An unmatched closer can never be an authored value, so it is trimmed even after
+// a query or fragment delimiter.
 const UNPAIRED_CLOSERS: Record<string, string> = { ")": "(", "]": "[", "}": "{", ">": "<" };
 
 function trimTrailingPunctuation(url: string): string {
-  // The query and fragment are kept verbatim; ambiguous terminal punctuation
-  // there is treated as part of the authored value rather than prose.
-  const authorityEnd = url.indexOf("/", "https://".length);
-  const delimiter = url.indexOf(
-    /[?#]/.test(url) ? url.match(/[?#]/)![0] : "",
-    Math.max(authorityEnd, 0),
-  );
-  const trimFloor = delimiter === -1 ? 0 : delimiter;
+  const delimiter = /[?#]/.exec(url);
+  // Index one past the last character that prose trimming may remove.
+  const pathEnd = delimiter ? delimiter.index : url.length;
   let end = url.length;
-  while (end > trimFloor) {
+  while (end > 0) {
     const last = url.slice(end - 1, end);
-    if (TRAILING_PUNCTUATION.includes(last)) {
-      end -= 1;
-      continue;
-    }
     const opener = UNPAIRED_CLOSERS[last];
     if (opener) {
       let opens = 0;
@@ -46,6 +39,11 @@ function trimTrailingPunctuation(url: string): string {
         end -= 1;
         continue;
       }
+      break;
+    }
+    if (end - 1 < pathEnd && TRAILING_PUNCTUATION.includes(last)) {
+      end -= 1;
+      continue;
     }
     break;
   }

@@ -54,7 +54,6 @@ describe("extractLinksFromMessage", () => {
     ["a comma mid-sentence", "see https://example.com/a, then tell me", "https://example.com/a"],
     ["a period", "Check https://example.com/a.", "https://example.com/a"],
     ["an exclamation mark", "wow https://example.com/a!", "https://example.com/a"],
-    ["a question mark", "https://example.com/a?", "https://example.com/a"],
     ["a colon", "link: https://example.com/a:", "https://example.com/a"],
     ["double quotes", 'open "https://example.com/a" now', "https://example.com/a"],
     ["unbalanced parentheses", "(see https://example.com/a)", "https://example.com/a"],
@@ -84,30 +83,49 @@ describe("extractLinksFromMessage", () => {
     ]);
   });
 
-  it("preserves punctuation inside the URL and trims only the token-final character", () => {
+  it("trims only path-region prose punctuation and keeps the query verbatim", () => {
     // Query commas and periods inside the URL survive untouched; the trim
-    // applies only when prose punctuation ends the bare token, matching the
-    // GFM autolink trailing-punctuation rule.
+    // applies when prose punctuation ends the bare token before a query or
+    // fragment delimiter begins.
     expect(extractLinksFromMessage("see https://example.com/search?q=a,b then go")).toStrictEqual([
       "https://example.com/search?q=a,b",
     ]);
     expect(extractLinksFromMessage("https://example.com/search?q=a,b")).toStrictEqual([
       "https://example.com/search?q=a,b",
     ]);
-    expect(
-      extractLinksFromMessage("look at https://example.com/search?q=a,b, and more"),
-    ).toStrictEqual(["https://example.com/search?q=a,b"]);
-    expect(extractLinksFromMessage("end of sentence https://example.com/a?b=1.")).toStrictEqual([
-      "https://example.com/a?b=1",
-    ]);
   });
 
-  it("resolves the ambiguous token-final comma by preferring the prose reading", () => {
-    // Authored URLs that genuinely end in list punctuation, e.g. a trailing
-    // comma of ?ids=1,2,, are fetched without it; the same tradeoff GitHub's
-    // autolink extension makes. Pinning this so the rule stays deliberate.
+  it("preserves authored terminal values inside query and fragment", () => {
+    // From a query or fragment delimiter onward the token is treated as the
+    // authored value: a terminal comma, period, or even a bare "?" survives
+    // verbatim, because rewriting it can change the fetched page. Accepted
+    // tradeoff: sentence punctuation directly after a queried URL is kept.
     expect(extractLinksFromMessage("https://example.com/x?ids=1,2,")).toStrictEqual([
-      "https://example.com/x?ids=1,2",
+      "https://example.com/x?ids=1,2,",
+    ]);
+    expect(extractLinksFromMessage("end https://example.com/a?b=1.")).toStrictEqual([
+      "https://example.com/a?b=1.",
+    ]);
+    expect(extractLinksFromMessage("section https://example.com/page#intro.")).toStrictEqual([
+      "https://example.com/page#intro.",
+    ]);
+    expect(extractLinksFromMessage("https://example.com/a?")).toStrictEqual([
+      "https://example.com/a?",
+    ]);
+    expect(
+      extractLinksFromMessage("look at https://example.com/search?q=a,b, and more"),
+    ).toStrictEqual(["https://example.com/search?q=a,b,"]);
+  });
+
+  it("still trims unbalanced closers after the query or fragment delimiter", () => {
+    // An unmatched closer can never be an authored value, so the prose
+    // parenthesis around a link is removed even after the delimiter, while a
+    // balanced Wikipedia-style suffix survives.
+    expect(extractLinksFromMessage("(link https://example.com/a?q=1)")).toStrictEqual([
+      "https://example.com/a?q=1",
+    ]);
+    expect(extractLinksFromMessage("see https://en.wikipedia.org/wiki/Foo_(bar)")).toStrictEqual([
+      "https://en.wikipedia.org/wiki/Foo_(bar)",
     ]);
   });
 });
