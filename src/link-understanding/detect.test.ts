@@ -117,12 +117,19 @@ describe("extractLinksFromMessage", () => {
     ).toStrictEqual(["https://example.com/search?q=a,b,"]);
   });
 
-  it("still trims unbalanced closers after the query or fragment delimiter", () => {
-    // An unmatched closer can never be an authored value, so the prose
-    // parenthesis around a link is removed even after the delimiter, while a
-    // balanced Wikipedia-style suffix survives.
+  it("preserves authored terminal closers inside query and fragment", () => {
+    // A terminal closer after a delimiter is part of the authored value that the
+    // URL parser keeps, so it reaches the guarded fetch whole. Accepted tradeoff:
+    // a parenthesis wrapped around a queried link survives, and that URL may 404
+    // the way it already does on main.
+    expect(extractLinksFromMessage("https://example.com/search?q=foo)")).toStrictEqual([
+      "https://example.com/search?q=foo)",
+    ]);
+    expect(extractLinksFromMessage("https://example.com/page#intro)")).toStrictEqual([
+      "https://example.com/page#intro)",
+    ]);
     expect(extractLinksFromMessage("(link https://example.com/a?q=1)")).toStrictEqual([
-      "https://example.com/a?q=1",
+      "https://example.com/a?q=1)",
     ]);
     expect(extractLinksFromMessage("see https://en.wikipedia.org/wiki/Foo_(bar)")).toStrictEqual([
       "https://en.wikipedia.org/wiki/Foo_(bar)",

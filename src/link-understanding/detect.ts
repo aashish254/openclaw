@@ -6,14 +6,14 @@ import { DEFAULT_MAX_LINKS } from "./defaults.js";
 const BARE_LINK_RE = /https?:\/\/\S+/gi;
 
 // Prose delimiters that are trimmed off a bare link, mirroring the punctuation
-// GitHub's GFM autolink extension excludes. Unlike GFM, trimming applies only
-// to the path region: from a query or fragment delimiter onward a comma or
-// period can be an authored value, so it is preserved verbatim.
+// GitHub's GFM autolink extension excludes. Unlike GFM, trimming applies only to
+// the path region: from a query or fragment delimiter onward every byte is treated
+// as the authored URL value, so commas, periods and closing marks there are kept.
 const TRAILING_PUNCTUATION = ",.;:?!\"'…";
-// Closers are only trailing punctuation when unbalanced by their opener inside the URL,
-// so destinations like https://en.wikipedia.org/wiki/Foo_(bar) keep their suffix.
-// An unmatched closer can never be an authored value, so it is trimmed even after
-// a query or fragment delimiter.
+// Closers are trailing punctuation only when unbalanced by their opener inside the
+// path region, so destinations like https://en.wikipedia.org/wiki/Foo_(bar) keep
+// their suffix. In the query or fragment region they are never trimmed, because an
+// unmatched closer can still be part of an authored value that the URL parser keeps.
 const UNPAIRED_CLOSERS: Record<string, string> = { ")": "(", "]": "[", "}": "{", ">": "<" };
 
 function trimTrailingPunctuation(url: string): string {
@@ -21,7 +21,7 @@ function trimTrailingPunctuation(url: string): string {
   // Index one past the last character that prose trimming may remove.
   const pathEnd = delimiter ? delimiter.index : url.length;
   let end = url.length;
-  while (end > 0) {
+  while (end > 0 && end - 1 < pathEnd) {
     const last = url.slice(end - 1, end);
     const opener = UNPAIRED_CLOSERS[last];
     if (opener) {
@@ -41,7 +41,7 @@ function trimTrailingPunctuation(url: string): string {
       }
       break;
     }
-    if (end - 1 < pathEnd && TRAILING_PUNCTUATION.includes(last)) {
+    if (TRAILING_PUNCTUATION.includes(last)) {
       end -= 1;
       continue;
     }
