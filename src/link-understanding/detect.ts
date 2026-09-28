@@ -17,11 +17,13 @@ const TRAILING_PUNCTUATION = ",.;:?!\"'…";
 const UNPAIRED_CLOSERS: Record<string, string> = { ")": "(", "]": "[", "}": "{", ">": "<" };
 
 /**
- * Trim trailing prose punctuation from a bare URL when it follows word content,
- * including stacked delimiters like "a).". Balanced closers (Wikipedia-style
- * "Foo_(bar)") and everything from a query or fragment delimiter onward are
- * authored values and survive untouched. A destination that genuinely ends in
- * punctuation must use the angle-bracket literal form instead.
+ * Trim trailing prose punctuation from a bare URL when the character before the
+ * suffix is content a URL ends on — word character or path separator — including
+ * stacked delimiters like "a)." and trailing-slash roots like "https://example.com/,"
+ * and "(https://example.com/)". Balanced closers (Wikipedia-style "Foo_(bar)") and
+ * everything from a query or fragment delimiter onward are authored values and
+ * survive untouched. A destination that genuinely ends in punctuation must use the
+ * angle-bracket literal form instead.
  */
 function trimTrailingProsePunctuation(url: string): string {
   // Find where the path ends (before query or fragment)
@@ -29,9 +31,9 @@ function trimTrailingProsePunctuation(url: string): string {
   const pathEnd = delimiterIndex ? delimiterIndex.index : url.length;
 
   // Collect the longest suffix of prose punctuation and unbalanced closers inside the
-  // path region, then drop it only when the character before the suffix is word
-  // content. Deciding the alphanumeric check once for the whole suffix is what lets
-  // stacked delimiters like "a)." trim together.
+  // path region, then drop it based on the character immediately before. Deciding that
+  // check once for the whole suffix is what lets stacked delimiters like "a)." and
+  // trailing-slash roots like "/," trim together.
   let runStart = url.length;
   while (runStart > 1 && runStart - 1 < pathEnd) {
     const last = url[runStart - 1]!;
@@ -67,11 +69,14 @@ function trimTrailingProsePunctuation(url: string): string {
   if (runStart === url.length) {
     return url;
   }
-  // Trim only when the character before the suffix is word content or a closer
-  // that stayed because it is balanced: "(read https://example.com/Foo_(bar))"
-  // drops the outer ")" but keeps the authored "(bar)".
+  // Trim when the character before the suffix is content a URL ends on: word
+  // characters, a closer that stayed because it is balanced
+  // ("(read https://example.com/Foo_(bar))" drops the outer ")" but keeps the
+  // authored "(bar)"), or a path separator so trailing-slash URLs like
+  // "https://example.com/, " and "(https://example.com/)" also shed the prose
+  // delimiter.
   const before = url[runStart - 1]!;
-  if (!/[a-zA-Z0-9_]/.test(before) && !(before in UNPAIRED_CLOSERS)) {
+  if (!/[a-zA-Z0-9_/]/.test(before) && !(before in UNPAIRED_CLOSERS)) {
     return url;
   }
   return url.slice(0, runStart);

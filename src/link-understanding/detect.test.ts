@@ -88,6 +88,24 @@ describe("trimTrailingProsePunctuation", () => {
     );
   });
 
+  it("trims prose punctuation after a trailing slash", () => {
+    // The path-separator root is content a URL can end on, so the prose
+    // delimiter that follows it is still trimmed. Authored literal destinations
+    // that truly end in punctuation use the angle-bracket form.
+    expect(extractLinksFromMessage("see https://example.com/, then go")).toStrictEqual([
+      "https://example.com/",
+    ]);
+    expect(extractLinksFromMessage("(read https://example.com/)")).toStrictEqual([
+      "https://example.com/",
+    ]);
+    expect(extractLinksFromMessage("visit https://example.com/page/.")).toStrictEqual([
+      "https://example.com/page/",
+    ]);
+    expect(extractLinksFromMessage("https://example.com/a/,")).toStrictEqual([
+      "https://example.com/a/",
+    ]);
+  });
+
   it("trims only path-region prose punctuation and keeps the query verbatim", () => {
     // Query commas and periods inside the URL survive untouched; the trim
     // applies when prose punctuation ends the bare token before a query or
