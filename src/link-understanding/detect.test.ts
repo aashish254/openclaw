@@ -106,6 +106,21 @@ describe("trimTrailingProsePunctuation", () => {
     ]);
   });
 
+  it("trims prose punctuation after a non-ASCII path character", () => {
+    // The predecessor guard is Unicode-aware: an accented or non-Latin path
+    // root is word content, so the ASCII prose delimiter that follows it is
+    // still trimmed rather than surviving onto the fetched path.
+    expect(extractLinksFromMessage("see https://example.com/café, then go")).toStrictEqual([
+      "https://example.com/caf\u00e9",
+    ]);
+    expect(extractLinksFromMessage("visit https://example.com/élève.")).toStrictEqual([
+      "https://example.com/\u00e9l\u00e8ve",
+    ]);
+    expect(extractLinksFromMessage("https://example.com/日本,")).toStrictEqual([
+      "https://example.com/日本",
+    ]);
+  });
+
   it("trims only path-region prose punctuation and keeps the query verbatim", () => {
     // Query commas and periods inside the URL survive untouched; the trim
     // applies when prose punctuation ends the bare token before a query or

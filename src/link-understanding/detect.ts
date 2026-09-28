@@ -69,14 +69,16 @@ function trimTrailingProsePunctuation(url: string): string {
   if (runStart === url.length) {
     return url;
   }
-  // Trim when the character before the suffix is content a URL ends on: word
-  // characters, a closer that stayed because it is balanced
+  // Trim when the character before the suffix is content a URL ends on: any
+  // Unicode letter or digit (so accented or non-Latin paths like
+  // "https://example.com/café," still shed the prose comma, not just ASCII),
+  // a closer that stayed because it is balanced
   // ("(read https://example.com/Foo_(bar))" drops the outer ")" but keeps the
   // authored "(bar)"), or a path separator so trailing-slash URLs like
   // "https://example.com/, " and "(https://example.com/)" also shed the prose
   // delimiter.
   const before = url[runStart - 1]!;
-  if (!/[a-zA-Z0-9_/]/.test(before) && !(before in UNPAIRED_CLOSERS)) {
+  if (!/[\p{L}\p{N}_/]/u.test(before) && !(before in UNPAIRED_CLOSERS)) {
     return url;
   }
   return url.slice(0, runStart);
