@@ -89,9 +89,9 @@ describe("trimTrailingProsePunctuation", () => {
     // Query commas and periods inside the URL survive untouched; the trim
     // applies when prose punctuation ends the bare token before a query or
     // fragment delimiter begins.
-    expect(
-      extractLinksFromMessage("see https://example.com/search?q=a,b then go"),
-    ).toStrictEqual(["https://example.com/search?q=a,b"]);
+    expect(extractLinksFromMessage("see https://example.com/search?q=a,b then go")).toStrictEqual([
+      "https://example.com/search?q=a,b",
+    ]);
     expect(extractLinksFromMessage("https://example.com/search?q=a,b")).toStrictEqual([
       "https://example.com/search?q=a,b",
     ]);

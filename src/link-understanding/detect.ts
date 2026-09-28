@@ -24,13 +24,13 @@ function trimTrailingProsePunctuation(url: string): string {
   // Find where the path ends (before query or fragment)
   const delimiterIndex = /[?#]/.exec(url);
   const pathEnd = delimiterIndex ? delimiterIndex.index : url.length;
-  
+
   let end = url.length;
-  
+
   // Only trim punctuation that comes within the path region
   while (end > 0 && end - 1 < pathEnd) {
     const last = url.slice(end - 1, end);
-    
+
     // Handle unmatched closers by counting opens vs closes in the portion before this char
     const opener = UNPAIRED_CLOSERS[last];
     if (opener) {
@@ -51,7 +51,7 @@ function trimTrailingProsePunctuation(url: string): string {
       }
       break;
     }
-    
+
     // Trim prose punctuation only if it follows word/alphanumeric content
     if (TRAILING_PUNCTUATION.includes(last)) {
       const prevChar = end > 1 ? url[end - 2] : "";
@@ -61,10 +61,10 @@ function trimTrailingProsePunctuation(url: string): string {
         continue;
       }
     }
-    
+
     break;
   }
-  
+
   return url.slice(0, end);
 }
 
@@ -104,11 +104,11 @@ function isAllowedUrl(raw: string): boolean {
 /**
  * Extracts unique, SSRF-filtered bare HTTP(S) links from inbound text.
  * Markdown links are ignored so display-only citations do not trigger fetches.
- * 
+ *
  * Trims trailing prose punctuation (commas, periods, etc.) from bare URLs when
  * they appear after word content, matching GitHub's GFM autolink behavior.
  * Preserves intentional punctuation-ending paths and query/fragment regions.
- * 
+ *
  * Use angle-bracket syntax (<url>) or markdown links [[text]](url) for literal
  * URLs ending in punctuation that should be preserved exactly.
  */
@@ -128,14 +128,14 @@ export function extractLinksFromMessage(message: string, opts?: { maxLinks?: num
     if (!raw) {
       continue;
     }
-    
+
     // Trim only prose-ending punctuation, preserving intentional punctuation paths
     const trimmed = trimTrailingProsePunctuation(raw);
-    
+
     if (!trimmed) {
       continue;
     }
-    
+
     if (!isAllowedUrl(trimmed)) {
       continue;
     }
