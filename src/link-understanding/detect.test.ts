@@ -83,6 +83,9 @@ describe("trimTrailingProsePunctuation", () => {
     expect(extractLinksFromMessage("https://example.com/a(b)_c.")).toStrictEqual([
       "https://example.com/a(b)_c",
     ]);
+    expect(extractLinksFromMessage("read (https://en.wikipedia.org/wiki/Foo_(bar))")).toStrictEqual(
+      ["https://en.wikipedia.org/wiki/Foo_(bar)"],
+    );
   });
 
   it("trims only path-region prose punctuation and keeps the query verbatim", () => {
@@ -136,5 +139,35 @@ describe("trimTrailingProsePunctuation", () => {
     expect(extractLinksFromMessage("see https://en.wikipedia.org/wiki/Foo_(bar)")).toStrictEqual([
       "https://en.wikipedia.org/wiki/Foo_(bar)",
     ]);
+  });
+});
+
+describe("angle-bracket literal links", () => {
+  it("fetches a punctuation-ending path verbatim", () => {
+    expect(extractLinksFromMessage("see <https://example.com/Hello!> now")).toStrictEqual([
+      "https://example.com/Hello!",
+    ]);
+    expect(extractLinksFromMessage("<https://example.com/a)>")).toStrictEqual([
+      "https://example.com/a)",
+    ]);
+  });
+
+  it("keeps balanced closers inside the literal whole", () => {
+    expect(extractLinksFromMessage("<https://en.wikipedia.org/wiki/Foo_(bar)>")).toStrictEqual([
+      "https://en.wikipedia.org/wiki/Foo_(bar)",
+    ]);
+  });
+
+  it("never leaks the surrounding brackets into the fetched URL", () => {
+    expect(extractLinksFromMessage("wow <https://example.com/a!>")).toStrictEqual([
+      "https://example.com/a!",
+    ]);
+  });
+
+  it("dedupes against the trimmed bare form and applies the same guards", () => {
+    expect(extractLinksFromMessage("<https://example.com/a> https://example.com/a,")).toStrictEqual(
+      ["https://example.com/a"],
+    );
+    expect(extractLinksFromMessage("<http://127.0.0.1/secret>")).toStrictEqual([]);
   });
 });
