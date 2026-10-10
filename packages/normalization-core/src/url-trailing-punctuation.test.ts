@@ -41,6 +41,20 @@ describe("normalization-core/url-trailing-punctuation", () => {
     );
   });
 
+  it("resolves to the bare form when both the authored and punctuated URLs are known", () => {
+    const known = new Set(["https://example.com/path", "https://example.com/path."]);
+    expect(trimUrlTrailingPunctuation("https://example.com/path.", known)).toBe(
+      "https://example.com/path",
+    );
+  });
+
+  it("stops at an exact authored destination even when a shorter known URL prefixes it", () => {
+    const known = new Set(["https://example.com/path", "https://example.com/path."]);
+    expect(trimUrlTrailingPunctuation("https://example.com/path.).", known)).toBe(
+      "https://example.com/path.",
+    );
+  });
+
   it("falls back to the authored destination once sentence punctuation is gone", () => {
     const known = new Set(["https://example.com/path."]);
     expect(trimUrlTrailingPunctuation("https://example.com/path.)", known)).toBe(
