@@ -2385,4 +2385,3 @@ src/state/user-model-account-id.ts
 src/state/user-profile-authority.ts
 src/state/user-profile-events.ts
 src/utils/normalize-secret-input.ts
-packages/normalization-core/src/url-trailing-punctuation.ts
