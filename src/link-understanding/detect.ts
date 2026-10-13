@@ -1,5 +1,5 @@
 // Link detection extracts unique safe bare HTTP(S) URLs from inbound text while filtering SSRF targets.
-import { trimUrlTrailingPunctuation } from "@openclaw/normalization-core";
+// NOTE: This does NOT trim punctuation because queries/fragments must be preserved as authored.
 import { findMarkdownLinkSourceSpans } from "../../packages/markdown-core/src/link-spans.js";
 import { isBlockedHostnameOrIp } from "../infra/net/ssrf.js";
 import { DEFAULT_MAX_LINKS } from "./defaults.js";
@@ -36,6 +36,10 @@ function isAllowedUrl(raw: string): boolean {
 /**
  * Extracts unique, SSRF-filtered bare HTTP(S) links from inbound text.
  * Markdown links are ignored so display-only citations do not trigger fetches.
+ *
+ * IMPORTANT: We do NOT trim trailing punctuation because query strings and fragments
+ * must be preserved exactly as written. Punctuation trimming belongs in TUI rendering,
+ * not in the fetching policy.
  */
 export function extractLinksFromMessage(message: string, opts?: { maxLinks?: number }): string[] {
   const source = message?.trim();
@@ -49,7 +53,7 @@ export function extractLinksFromMessage(message: string, opts?: { maxLinks?: num
   const results: string[] = [];
 
   for (const match of sanitized.matchAll(BARE_LINK_RE)) {
-    const raw = trimUrlTrailingPunctuation(match[0]?.trim() ?? "");
+    const raw = match[0]?.trim() ?? "";
     if (!raw) {
       continue;
     }

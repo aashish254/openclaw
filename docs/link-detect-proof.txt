@@ -1,0 +1,35 @@
+=== Link Detection Behavior Proof ===
+
+✅ Comma in query preserved (CRITICAL FIX VERIFICATION)
+   Input: "Query ids=1,2: https://example.com/?ids=1,2"
+   Extracted: ["https://example.com/?ids=1,2"]
+
+✅ Closing paren in query preserved
+   Input: "Search foo)bar: https://example.com/search?q=foo)bar"
+   Extracted: ["https://example.com/search?q=foo)bar"]
+
+✅ Fragment comma preserved
+   Input: "Fragment: https://example.com/page#section,"
+   Extracted: ["https://example.com/page#section,"]
+
+✅ Trailing period preserved (queries NOT trimmed)
+   Input: "See https://example.com/path."
+   Extracted: ["https://example.com/path."]
+
+✅ Exclamation preserved
+   Input: "Check https://example.com/path! for details"
+   Extracted: ["https://example.com/path!"]
+
+✅ Multiple prose endings preserved
+   Input: "See https://a.com. And https://b.com!"
+   Extracted: ["https://a.com.","https://b.com!"]
+
+=== Summary ===
+Passed: 6/6
+Failed: 0/6
+
+SUCCESS: All behaviors match expected output.
+- Query strings/fragments preserved exactly as written ✓
+- Trailing punctuation NOT removed from fetch destinations ✓
+
+This proves the fix resolves P1: preserve authored query and fragment bytes.
