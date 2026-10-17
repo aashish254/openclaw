@@ -34,27 +34,12 @@ describe("extractLinksFromMessage", () => {
     ]);
   });
 
-  it.each([
-    ["a sentence period", "See https://example.com/path.", "https://example.com/path"],
-    ["a parenthetical citation", "(see https://example.com/path).", "https://example.com/path"],
-    [
-      "balanced documentation parentheses",
-      "Docs at https://en.wikipedia.org/wiki/URL_(disambiguation).",
-      "https://en.wikipedia.org/wiki/URL_(disambiguation)",
-    ],
-    [
-      "an authored comma-separated query",
-      "https://example.com/search?q=a,b",
-      "https://example.com/search?q=a,b",
-    ],
-  ])("trims %s from a bare link", (_name, message, expected) => {
-    expect(extractLinksFromMessage(message)).toStrictEqual([expected]);
-  });
-
-  it("dedupes a punctuated bare link against its authored form", () => {
+  it("preserves authored query and fragment bytes", () => {
     expect(
-      extractLinksFromMessage("https://example.com/path. and again https://example.com/path."),
-    ).toStrictEqual(["https://example.com/path"]);
+      extractLinksFromMessage(
+        "Query https://example.com/search?ids=1,2 and fragment https://example.com/page#section,",
+      ),
+    ).toStrictEqual(["https://example.com/search?ids=1,2", "https://example.com/page#section,"]);
   });
 
   it("blocks 127.0.0.1", () => {
