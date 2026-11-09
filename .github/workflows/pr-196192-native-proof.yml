@@ -61,7 +61,7 @@ jobs:
       - name: Confirm the focused regression fails on base
         run: |
           set +e
-          env -u GITHUB_TOKEN -u GH_TOKEN -u ACTIONS_RUNTIME_TOKEN -u ACTIONS_ID_TOKEN_REQUEST_TOKEN CI=1 \
+          env -u GITHUB_TOKEN -u GH_TOKEN -u ACTIONS_RUNTIME_TOKEN -u ACTIONS_ID_TOKEN_REQUEST_TOKEN CI=true \
             node scripts/test-macos-native.mts named --package-path apps/macos \
             --build-system native --enable-code-coverage --disable-index-store \
             -Xswiftc -gline-tables-only --skip-build \
@@ -91,7 +91,7 @@ jobs:
         run: swift build --package-path apps/macos --build-system native --enable-code-coverage --disable-index-store -Xswiftc -gline-tables-only --build-tests
       - name: Run focused coordinator, worker, and Gateway session tests
         run: |
-          env -u GITHUB_TOKEN -u GH_TOKEN -u ACTIONS_RUNTIME_TOKEN -u ACTIONS_ID_TOKEN_REQUEST_TOKEN CI=1 \
+          env -u GITHUB_TOKEN -u GH_TOKEN -u ACTIONS_RUNTIME_TOKEN -u ACTIONS_ID_TOKEN_REQUEST_TOKEN CI=true \
             node scripts/test-macos-native.mts named --package-path apps/macos \
             --build-system native --enable-code-coverage --disable-index-store \
             -Xswiftc -gline-tables-only --skip-build \
