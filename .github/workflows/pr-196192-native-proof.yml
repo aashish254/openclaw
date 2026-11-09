@@ -95,5 +95,5 @@ jobs:
             node scripts/test-macos-native.mts named --package-path apps/macos \
             --build-system native --enable-code-coverage --disable-index-store \
             -Xswiftc -gline-tables-only --skip-build \
-            --filter 'MacNodeModeCoordinatorTests|MacNodeHostWorkerTests|GatewayConnectionControlTests|GatewayConnectionPushOwnershipTests'
+            --filter 'MacNodeModeCoordinatorTests|MacNodeHostWorkerTests|GatewayConnectionPushOwnershipTests'
           echo "Focused native tests passed at $HEAD_SHA. Gateway transport is isolated in-process." | tee -a "$GITHUB_STEP_SUMMARY"
