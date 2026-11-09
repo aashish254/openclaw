@@ -1,0 +1,99 @@
+name: PR 196192 native proof
+on:
+  push:
+    branches: ["codex/proof-pr196192-macos"]
+permissions:
+  contents: read
+jobs:
+  native-proof:
+    name: macOS base-red and PR-head-green proof
+    runs-on: macos-26
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash
+        working-directory: source
+    env:
+      BASE_SHA: ce7788f5a24e5e2d0ef146a5dcea3ef4d0bb0983
+      HEAD_SHA: 1df0eda5b877f3032b803974e9105e011b311d74
+    steps:
+      - name: Checkout exact PR base
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: openclaw/openclaw
+          ref: ce7788f5a24e5e2d0ef146a5dcea3ef4d0bb0983
+          path: source
+          persist-credentials: false
+      - name: Set up Node 24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24.22.1
+      - name: Install the native test dependency closure
+        run: |
+          corepack enable
+          corepack pnpm install --frozen-lockfile --prefer-offline --optional \
+            --filter '@openclaw/mermaid-renderer...' \
+            --filter '@openclaw/gateway-protocol...' \
+            --filter 'openclaw...' \
+            --config.ignore-scripts=false \
+            --config.engine-strict=false \
+            --config.enable-pre-post-scripts=true \
+            --config.side-effects-cache=true
+      - name: Prepare native assets
+        run: node scripts/prepare-apple-mermaid.mjs
+      - name: Add the focused base regression assertion
+        run: |
+          cat > apps/macos/Tests/OpenClawIPCTests/PeekabooGenerationBaselineProofTests.swift <<'SWIFT'
+          import Testing
+          @testable import OpenClaw
+
+          struct PeekabooGenerationBaselineProofTests {
+              @Test func `ordinary descriptor reads retain their generation`() {
+                  let beforeRefresh = ComputerControlProvider.peekabooComputerUseDescriptor
+                  let afterRefresh = ComputerControlProvider.peekabooComputerUseDescriptor
+                  print("BASELINE_ASSERTION: repeated Peekaboo descriptor reads should be equal")
+                  #expect(afterRefresh == beforeRefresh)
+              }
+          }
+          SWIFT
+      - name: Build baseline native test bundle
+        run: swift build --package-path apps/macos --build-system native --enable-code-coverage --disable-index-store -Xswiftc -gline-tables-only --build-tests
+      - name: Confirm the focused regression fails on base
+        run: |
+          set +e
+          env -u GITHUB_TOKEN -u GH_TOKEN -u ACTIONS_RUNTIME_TOKEN -u ACTIONS_ID_TOKEN_REQUEST_TOKEN CI=1 \
+            node scripts/test-macos-native.mts named --package-path apps/macos \
+            --build-system native --enable-code-coverage --disable-index-store \
+            -Xswiftc -gline-tables-only --skip-build \
+            --filter PeekabooGenerationBaselineProofTests \
+            > "$RUNNER_TEMP/baseline-red.log" 2>&1
+          result=$?
+          set -e
+          cat "$RUNNER_TEMP/baseline-red.log"
+          if [[ "$result" -eq 0 ]]; then
+            echo "Expected the baseline regression assertion to fail, but it passed." >&2
+            exit 1
+          fi
+          grep -Fq "BASELINE_ASSERTION" "$RUNNER_TEMP/baseline-red.log"
+          grep -Fq "Expectation failed" "$RUNNER_TEMP/baseline-red.log"
+          echo "Expected baseline failure confirmed at $BASE_SHA." | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Switch to exact PR head
+        run: |
+          rm apps/macos/Tests/OpenClawIPCTests/PeekabooGenerationBaselineProofTests.swift
+          git remote add pr-head https://github.com/aashish254/openclaw.git
+          git fetch --depth=1 pr-head "$HEAD_SHA"
+          git checkout --detach FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          echo "PR head: $(git rev-parse HEAD)" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Prepare PR-head native assets
+        run: node scripts/prepare-apple-mermaid.mjs
+      - name: Build PR-head native test bundle
+        run: swift build --package-path apps/macos --build-system native --enable-code-coverage --disable-index-store -Xswiftc -gline-tables-only --build-tests
+      - name: Run focused coordinator, worker, and Gateway session tests
+        run: |
+          env -u GITHUB_TOKEN -u GH_TOKEN -u ACTIONS_RUNTIME_TOKEN -u ACTIONS_ID_TOKEN_REQUEST_TOKEN CI=1 \
+            node scripts/test-macos-native.mts named --package-path apps/macos \
+            --build-system native --enable-code-coverage --disable-index-store \
+            -Xswiftc -gline-tables-only --skip-build \
+            --filter 'MacNodeModeCoordinatorTests|MacNodeHostWorkerTests|GatewayConnectionControlTests|GatewayConnectionPushOwnershipTests'
+          echo "Focused native tests passed at $HEAD_SHA. Gateway transport is isolated in-process." | tee -a "$GITHUB_STEP_SUMMARY"
