@@ -5,13 +5,13 @@ enum ComputerControlProvider: String, CaseIterable, Sendable {
     case peekaboo
     case cua
 
-    static var peekabooComputerUseDescriptor: OpenClawProtocol.AnyCodable {
+    static func peekabooComputerUseDescriptor(generation: UUID) -> OpenClawProtocol.AnyCodable {
         OpenClawProtocol.AnyCodable([
             "contractVersion": 2,
             "provider": [
                 "id": "peekaboo",
                 "label": "Peekaboo",
-                "generation": "peekaboo-v2:\(UUID().uuidString.lowercased())",
+                "generation": "peekaboo-v2:\(generation.uuidString.lowercased())",
             ],
             "actions": [
                 "screenshot",
